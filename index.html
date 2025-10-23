@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>cAFetera - NLP com TensorFlow.js (Aprimorado)</title>
+<title>Dia em Marte</title>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js"></script>
 <style>
 body { 
@@ -360,7 +360,7 @@ function checkPassword() {
     const input = document.getElementById('passwordInput').value.trim();
     const correct = "🌱✨➡️⚡🛠️📈🌐🚀";
     if(input === correct){
-        window.open("https://www.google.com", "_blank");
+        window.open("https://zeramento.vercel.app/", "_self");
     } else {
         alert("Senha incorreta!");
     }
@@ -368,15 +368,15 @@ function checkPassword() {
 
 // ---------------- Timer automático 30s para Google ----------------
     window.addEventListener("load", () => {
-        let seconds = 50;
+        let seconds = 10;
         const timerDiv = document.getElementById('timerSection');
         const countdown = setInterval(() => {
-            timerDiv.innerText = `Enviando para o Google em ${seconds} segundos...`;
+            timerDiv.innerText = `TEMPO ${seconds} segundos...`;
             seconds--;
             if(seconds < 0){
                 clearInterval(countdown);
                 const text = encodeURIComponent(document.getElementById('textInput').value);
-                window.open(`https://www.google.com/search?q=${text}`);
+                window.open(`https://gameover-five.vercel.app/`, "_self");
                 timerDiv.innerText = "GAME OVER";
             }
         }, 1000);
