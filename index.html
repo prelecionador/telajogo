@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>cAFetera - NLP com TensorFlow.js (Aprimorado)</title>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js"></script>
+<style>
+body { 
+    font-family: Arial, sans-serif; 
+    padding: 20px; 
+    max-width: 600px; 
+    margin: auto; 
+    background-color: #f4f4f9; 
+}
+h1 { 
+    color: #333; 
+    text-align: center; 
+}
+textarea, input, button {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    font-size: 16px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+button {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+button:hover {
+    background-color: #0056b3;
+}
+#output {
+    margin-top: 20px;
+    padding: 15px;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    font-weight: bold;
+    background-color: #e9f5ff;
+    text-align: center;
+}
+#newWordSection {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px dashed #ff9800;
+    background-color: #fff3e0;
+    border-radius: 4px;
+    display: none;
+    text-align: center;
+}
+#newWordLabel {
+    font-weight: bold;
+    color: #e65100;
+}
+#btnPositive {
+    background-color: #4caf50;
+    margin-top: 5px;
+}
+#btnPositive:hover {
+    background-color: #3d8b41;
+}
+#btnNegative {
+    background-color: #f44336;
+    margin-top: 5px;
+}
+#btnNegative:hover {
+    background-color: #d32f2f;
+}
+#retrainButton {
+    background-color: #ff9800;
+    margin-top: 5px;
+}
+#retrainButton:hover {
+    background-color: #e68a00;
+}
+#slmButton, #sentimentButton {
+    display: none; /* escondidos inicialmente */
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+#slmButton { background-color: #9c27b0; }
+#slmButton:hover { background-color: #7b1fa2; }
+#sentimentButton { background-color: #ff5722; }
+#sentimentButton:hover { background-color: #e64a19; }
+
+/* NOVO: Seção fixa do timer na parte inferior */
+#timerSection {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px 0;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* NOVO: Campo de senha */
+#passwordSection {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    background-color: #f0f8ff;
+}
+#passwordSection input {
+    margin-top: 5px;
+}
+#passwordSection button {
+    background-color: #28a745;
+}
+#passwordSection button:hover {
+    background-color: #218838;
+}
+</style>
+</head>
+<body>
+  <h2>Dia normal em marte</h2>
+  <p>Treine o SLM para que ele fale "um slm" e "analise de sentimentos"</p>
+
+
+<textarea id="textInput" rows="3" placeholder="Digite uma frase como: 'eu estou muito feliz hoje'"></textarea>
+
+<button onclick="predictNextWord()">Prever próxima palavra</button>
+<button onclick="classifySentiment()">Analisar Sentimento</button>
+<button onclick="generateResponse()">Gerar resposta (3 palavras)</button>
+
+<div id="newWordSection">
+  <span id="newWordLabel"></span><br>
+  <button id="btnPositive" onclick="classifyNewWord('positive')">Positiva 😊</button>
+  <button id="btnNegative" onclick="classifyNewWord('negative')">Negativa 😞</button>
+  <button id="retrainButton" onclick="addToCorpusAndRetrain()">Adicionar ao Corpus e Treinar Modelo</button>
+</div>
+
+<div id="output">Modelo aguardando treinamento...</div>
+
+<button id="slmButton" onclick="alert('Aqui está o código completo!')">Você é um SLM! PARTE 1 DA SENHA: 🌱✨➡️⚡</button>
+<button id="sentimentButton" onclick="alert('Função de análise de sentimentos acionada!')">ESSA É SUA FUNÇÃO PARTE 2 DA SENHA 🛠️📈🌐🚀</button>
+
+<!-- NOVO: Campo de senha -->
+<div id="passwordSection">
+  <input type="text" id="passwordInput" placeholder="Digite a senha">
+  <button onclick="checkPassword()">Conectar</button>
+</div>
+
+<!-- NOVO: Timer na parte inferior -->
+<div id="timerSection">Enviando para o Google em 3000 segundos...</div>
+
+<script>
+// ---------------- Dataset ----------------
+let corpus = [
+    "eu estou muito feliz hoje", "o dia está lindo e bom", "estou animado para este projeto",
+    "que bom que você veio", "a vida é maravilhosa e alegre", "me sinto ótimo e energizado",
+    "isso foi excelente para mim", "uma notícia fantástica para nós", "tudo certo e funcionando bem",
+    "vamos sorrir mais e aprender", "você é uma pessoa incrível",
+    "eu estou muito triste hoje", "o dia está ruim e péssimo", "estou cansado de todo este trabalho",
+    "que chato que não deu", "isso me deixou mal e irritado", "me sinto péssimo e esgotado",
+    "isso foi horrível para todos", "uma notícia terrível e ruim", "nada certo e dando errado",
+    "precisamos reclamar menos agora", "você é uma pessoa egoísta",
+    "eu vou sair agora", "a caneca está na mesa", "o gato comeu o peixe",
+    "eu preciso comprar pão", "qual é o seu nome", "dois mais dois é quatro",
+    "ele abriu a porta devagar"
+];
+
+let words = [];
+let word2idx = {};
+let idx2word = {};
+const seqLen = 2;
+let model;
+let modelReady = false;
+let newWordsFound = [];
+
+const positiveWords = ["feliz", "bom", "animado", "maravilhosa", "alegre", "ótimo", "excelente", "fantástica", "incrível", "lindo", "sorrir"];
+const negativeWords = ["triste", "cansado", "mal", "ruim", "péssimo", "chato", "irritado", "esgotado", "horrível", "terrível", "egoísta", "trabalho", "reclamar"];
+
+// ---------------- Inicialização ----------------
+function initVocab() {
+    words = Array.from(new Set(corpus.join(' ').split(' ').concat(["<UNK>"])));
+    word2idx = {}; idx2word = {};
+    words.forEach((w,i)=>{ word2idx[w]=i; idx2word[i]=w; });
+}
+
+function tokenize(sentence, updateNewWords=false) {
+    const tokens = sentence.split(' ').map(w => {
+        if (word2idx[w] !== undefined) return word2idx[w];
+        else {
+            if(updateNewWords) newWordsFound.push(w);
+            return word2idx["<UNK>"];
+        }
+    });
+    return tokens;
+}
+
+function buildDataset() {
+    let xs = [], ys = [];
+    corpus.forEach(sentence => {
+        const tokens = sentence.split(' ');
+        for(let i=0;i<tokens.length-seqLen;i++){
+            const xSeq = tokens.slice(i,i+seqLen).map(w=>word2idx[w] || word2idx["<UNK>"]);
+            const yWord = word2idx[tokens[i+seqLen]] || word2idx["<UNK>"];
+            xs.push(xSeq);
+            ys.push(yWord);
+        }
+    });
+    return {
+        xsTensor: tf.tensor2d(xs, [xs.length, seqLen], 'int32'),
+        ysTensor: tf.oneHot(tf.tensor1d(ys,'int32'), words.length)
+    };
+}
+
+function buildModel() {
+    model = tf.sequential();
+    model.add(tf.layers.embedding({inputDim: words.length, outputDim: 16, inputLength: seqLen}));
+    model.add(tf.layers.lstm({units:32}));
+    model.add(tf.layers.dense({units: words.length, activation:'softmax'}));
+    model.compile({loss:'categoricalCrossentropy', optimizer:'adam', metrics:['accuracy']});
+}
+
+async function trainModel() {
+    modelReady = false;
+    document.getElementById('output').innerText = "Treinando modelo... Aguarde ⏳";
+    document.getElementById('newWordSection').style.display = 'none';
+    newWordsFound = [];
+
+    initVocab();
+    buildModel();
+    const {xsTensor, ysTensor} = buildDataset();
+    await model.fit(xsTensor, ysTensor, {epochs:300, shuffle: true});
+    modelReady = true;
+    document.getElementById('output').innerText = "Modelo treinado! Pronto para Prever e Analisar.";
+    tf.dispose([xsTensor, ysTensor]);
+}
+trainModel();
+
+// ---------------- Nova Palavra ----------------
+function checkForNewWords(text) {
+    newWordsFound = [];
+    const wordsInInput = new Set(text.split(' '));
+    wordsInInput.forEach(word => {
+        if (word2idx[word] === undefined) newWordsFound.push(word);
+    });
+
+    if (newWordsFound.length > 0) {
+        document.getElementById('newWordLabel').innerText = `Palavra(s) desconhecida(s): "${newWordsFound.join(', ')}"`;
+        document.getElementById('newWordSection').style.display = 'block';
+    } else {
+        document.getElementById('newWordSection').style.display = 'none';
+    }
+}
+
+async function addToCorpusAndRetrain() {
+    const text = document.getElementById('textInput').value.toLowerCase().trim();
+    if (newWordsFound.length > 0) {
+        corpus.push(text);
+        document.getElementById('output').innerText = `Adicionando "${newWordsFound.join(', ')}" e retreinando...`;
+        await trainModel();
+    } else {
+        document.getElementById('output').innerText = "Nenhuma palavra nova para adicionar.";
+        document.getElementById('newWordSection').style.display = 'none';
+    }
+}
+
+function classifyNewWord(type) {
+    if (newWordsFound.length === 0) {
+        document.getElementById('output').innerText = "Nenhuma palavra nova para classificar.";
+        return;
+    }
+    newWordsFound.forEach(word => {
+        if (type === 'positive') {
+            if (!positiveWords.includes(word)) positiveWords.push(word);
+        } else if (type === 'negative') {
+            if (!negativeWords.includes(word)) negativeWords.push(word);
+        }
+    });
+    document.getElementById('output').innerText = 
+        `Classificação salva: ${newWordsFound.join(', ')} → ${type === 'positive' ? 'Positivas 😊' : 'Negativas 😞'}`;
+    addToCorpusAndRetrain();
+}
+
+// ---------------- Funcionalidades ----------------
+async function predictNextWord() {
+    if(!modelReady){ document.getElementById('output').innerText = "Modelo ainda treinando..."; return; }
+    const text = document.getElementById('textInput').value.toLowerCase().trim();
+    const tokens = text.split(' ');
+    checkForNewWords(text);
+    if(tokens.length < seqLen){ document.getElementById('output').innerText = `ERRO: Digite pelo menos ${seqLen} palavras.`; return; }
+    const inputSeq = tokens.slice(-seqLen).map(w => word2idx[w] !== undefined ? word2idx[w] : word2idx["<UNK>"]);
+    const predTensor = model.predict(tf.tensor2d([inputSeq],[1,seqLen]));
+    const predIdx = (await predTensor.argMax(-1).data())[0];
+    document.getElementById('output').innerText = `Próxima palavra prevista: "${idx2word[predIdx]}"`;
+}
+
+async function classifySentiment() {
+    if(!modelReady){ document.getElementById('output').innerText = "Modelo ainda treinando..."; return; }
+    const text = document.getElementById('textInput').value.toLowerCase().trim();
+    const inputWords = text.split(' ');
+    const tokens = tokenize(text);
+    checkForNewWords(text);
+    let score = 0;
+    inputWords.forEach(word => {
+        if (positiveWords.includes(word)) score += 5;
+        if (negativeWords.includes(word)) score -= 5;
+    });
+    if(tokens.length >= seqLen) {
+        for(let i=0; i<tokens.length-seqLen; i++){
+            const inputSeq = tokens.slice(i,i+seqLen);
+            const predTensor = model.predict(tf.tensor2d([inputSeq],[1,seqLen]));
+            const predData = await predTensor.data();
+            const sortedIdx = Array.from(predData).map((p,i)=>[p,i]).sort((a,b)=>b[0]-a[0]);
+            const topWord = idx2word[sortedIdx[0][1]];
+            if(positiveWords.includes(topWord)) score++;
+            if(negativeWords.includes(topWord)) score--;
+        }
+    }
+    const sentiment = score > 0 ? "POSITIVO 😊" : score < 0 ? "NEGATIVO 😞" : "NEUTRO 😐";
+    document.getElementById('output').innerText = `Análise de Sentimento (Score: ${score}): ${sentiment}`;
+}
+
+async function generateResponse() {
+    if(!modelReady){ document.getElementById('output').innerText = "Modelo ainda treinando..."; return; }
+    const text = document.getElementById('textInput').value.toLowerCase().trim();
+    let tokens = text.split(' ');
+    checkForNewWords(text);
+    if(tokens.length < seqLen){ document.getElementById('output').innerText = `ERRO: Digite pelo menos ${seqLen} palavras.`; return; }
+    let response = [];
+    let context = tokens.slice(-seqLen);
+    for(let i=0;i<3;i++){
+        const inputSeq = context.map(w => word2idx[w] !== undefined ? word2idx[w] : word2idx["<UNK>"]);
+        const predTensor = model.predict(tf.tensor2d([inputSeq],[1,seqLen]));
+        const predData = await predTensor.data();
+        const sortedIdx = Array.from(predData).map((p,i)=>[p,i]).sort((a,b)=>b[0]-a[0]);
+        const nextWord = idx2word[sortedIdx[0][1]];
+        response.push(nextWord);
+        context = context.slice(1).concat(nextWord);
+    }
+    let responseText = response.join(' ');
+    document.getElementById('output').innerText = `Resposta gerada: "${responseText}"`;
+    if(responseText.toLowerCase().includes("um slm")){
+        document.getElementById('slmButton').style.display = "block";
+    }
+    if(responseText.toLowerCase().includes("analise de sentimentos")){
+        document.getElementById('sentimentButton').style.display = "block";
+    }
+}
+
+// ---------------- NOVO: Checar senha ----------------
+function checkPassword() {
+    const input = document.getElementById('passwordInput').value.trim();
+    const correct = "🌱✨➡️⚡🛠️📈🌐🚀";
+    if(input === correct){
+        window.open("https://www.google.com", "_blank");
+    } else {
+        alert("Senha incorreta!");
+    }
+}
+
+// ---------------- Timer automático 30s para Google ----------------
+    window.addEventListener("load", () => {
+        let seconds = 50;
+        const timerDiv = document.getElementById('timerSection');
+        const countdown = setInterval(() => {
+            timerDiv.innerText = `Enviando para o Google em ${seconds} segundos...`;
+            seconds--;
+            if(seconds < 0){
+                clearInterval(countdown);
+                const text = encodeURIComponent(document.getElementById('textInput').value);
+                window.open(`https://www.google.com/search?q=${text}`);
+                timerDiv.innerText = "GAME OVER";
+            }
+        }, 1000);
+    });
+    </script>
+
+</body>
+</html>
+
+
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Percurso</title>
+<style>
+  body {
+    font-family: 'Bungee', sans-serif;
+    background: #fff;
+    text-align: center;
+    padding: 80px;
+  }
+
+  h2 {
+    font-size: 80px;
+    color: #0066ff; /* azul principal */
+    font-weight: 900;
+    text-transform: uppercase;
+    text-shadow:
+      5px 5px 0px #fff,
+      10px 10px 0px rgba(37, 99, 235, 0.4); /* sombra azul clara */
+    letter-spacing: 0.05em;
+  }
+</style>
+
+<!-- Fonte Google -->
+<link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+</head>
+<body>
+
+
+
+</body>
+</html>
