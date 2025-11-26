@@ -156,7 +156,7 @@ button:hover {
 </div>
 
 <!-- NOVO: Timer na parte inferior -->
-<div id="timerSection">Time 3000 segundos...</div>
+<div id="timerSection">Time 5 minutos...</div>
 
 <script>
 // ---------------- Dataset ----------------
@@ -350,7 +350,7 @@ async function generateResponse() {
     if(responseText.toLowerCase().includes("um slm")){
         document.getElementById('slmButton').style.display = "block";
     }
-    if(responseText.toLowerCase().includes("ola mundo")){
+    if(responseText.toLowerCase().includes("olá mundo")){
         document.getElementById('sentimentButton').style.display = "block";
     }
 }
@@ -368,7 +368,7 @@ function checkPassword() {
 
 // ---------------- Timer automático 30s para Google ----------------
     window.addEventListener("load", () => {
-        let seconds = 900;
+        let seconds = 300;
         const timerDiv = document.getElementById('timerSection');
         const countdown = setInterval(() => {
             timerDiv.innerText = `TEMPO ${seconds} segundos...`;
