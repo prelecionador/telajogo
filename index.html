@@ -128,7 +128,7 @@ button:hover {
 </head>
 <body>
   <h2>Dia normal em marte</h2>
-  <p>Treine o SLM para que ele fale "um slm" e "analise de sentimentos"</p>
+  <p>Treine o SLM para que ele fale "Olá mundo" e "um slm"</p>
 
 
 <textarea id="textInput" rows="3" placeholder="Digite uma frase como: 'eu estou muito feliz hoje'"></textarea>
@@ -156,7 +156,7 @@ button:hover {
 </div>
 
 <!-- NOVO: Timer na parte inferior -->
-<div id="timerSection">Enviando para o Google em 3000 segundos...</div>
+<div id="timerSection">Time 3000 segundos...</div>
 
 <script>
 // ---------------- Dataset ----------------
@@ -350,7 +350,7 @@ async function generateResponse() {
     if(responseText.toLowerCase().includes("um slm")){
         document.getElementById('slmButton').style.display = "block";
     }
-    if(responseText.toLowerCase().includes("analise de sentimentos")){
+    if(responseText.toLowerCase().includes("ola mundo")){
         document.getElementById('sentimentButton').style.display = "block";
     }
 }
@@ -368,7 +368,7 @@ function checkPassword() {
 
 // ---------------- Timer automático 30s para Google ----------------
     window.addEventListener("load", () => {
-        let seconds = 120;
+        let seconds = 900;
         const timerDiv = document.getElementById('timerSection');
         const countdown = setInterval(() => {
             timerDiv.innerText = `TEMPO ${seconds} segundos...`;
